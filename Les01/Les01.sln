@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef01-Fiets", "Oef01-Fiets\Oef01-Fiets.csproj", "{566ADBFB-7BDF-47C0-A188-ADA97894D217}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef02-KauwgomAutomaat", "Oef02-KauwgomAutomaat\Oef02-KauwgomAutomaat.csproj", "{CFDF1E43-D72A-461C-9CA1-9B8935DF15D1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef03-Rekening", "Oef03-Rekening\Oef03-Rekening.csproj", "{34E0F958-7FA5-4773-A37C-3F5DE8EC5324}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef04-Veelhoeken", "Oef04-Veelhoeken\Oef04-Veelhoeken.csproj", "{78C500E8-BCE5-413E-987F-8955A5E99DE7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{34E0F958-7FA5-4773-A37C-3F5DE8EC5324}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34E0F958-7FA5-4773-A37C-3F5DE8EC5324}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34E0F958-7FA5-4773-A37C-3F5DE8EC5324}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78C500E8-BCE5-413E-987F-8955A5E99DE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78C500E8-BCE5-413E-987F-8955A5E99DE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78C500E8-BCE5-413E-987F-8955A5E99DE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78C500E8-BCE5-413E-987F-8955A5E99DE7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

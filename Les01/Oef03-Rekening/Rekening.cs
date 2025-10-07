@@ -18,7 +18,7 @@
                 _houder = value.Trim();
             }
         }
-        private string _houder;
+        private string _houder = string.Empty;
 
         public Rekening() : this(123_456_789, "onbekend") { }
 

@@ -3,12 +3,12 @@
     internal class KauwgomAutomaat
     {
         private const int MaxCapaciteit = 150;
-        public int AantalBallen { get; private set; } = 0;
+        public int AantalBallen { get; private set; }
         public string Kleur { get; set; } = "Rood";
         public bool IsVergrendeld { get; set; } = true;
         public bool IsLeeg => AantalBallen == 0;
 
-        public KauwgomAutomaat() { }
+        public KauwgomAutomaat() : this(0) { }
 
         public KauwgomAutomaat(int aantalBallen)
         {
