@@ -59,7 +59,7 @@ namespace Oef04_Veelhoeken
                 KeuzeDriehoek(overzichtVormen);
         }
 
-        private static void KeuzeRechthoek(Helper overzichtVormen)
+        private static void KeuzeRechthoek(Helper helper)
         {
             Console.Write("Geef de lengte van de rechthoek: ");
             double lengte = CorrectValue(Console.ReadLine());
@@ -67,9 +67,10 @@ namespace Oef04_Veelhoeken
             double breedte = CorrectValue(Console.ReadLine());
 
             Rechthoek r = new(lengte, breedte);
+            ProbeerToevoegen(helper, r);
         }
 
-        private static void KeuzeDriehoek(Helper overzichtVormen)
+        private static void KeuzeDriehoek(Helper helper)
         {
             Console.Write("Geef de lengte van de zijde A: ");
             double lengteZijdeA = CorrectValue(Console.ReadLine());
@@ -78,7 +79,27 @@ namespace Oef04_Veelhoeken
             Console.Write("Geef de lengte van de zijde C: ");
             double lengteZijdeC = CorrectValue(Console.ReadLine());
 
-            Driehoek d = new(lengteZijdeA, lengteZijdeB, lengteZijdeC);               
+            Driehoek d = new(lengteZijdeA, lengteZijdeB, lengteZijdeC);
+            ProbeerToevoegen(helper, d);
+        }
+
+        private static bool IsJa(string? input)
+            => !string.IsNullOrWhiteSpace(input) && char.ToLowerInvariant(input[0]) == 'j';
+
+        private static void ProbeerToevoegen(Helper helper, Shape s)
+        {
+            if (helper.Bestaat(s))
+            {
+                Console.Write("Deze vorm bestaat al. Toch toevoegen? (j/n): ");
+                if (IsJa(Console.ReadLine()))
+                    // duplicaat bewust toevoegen aan de lijst (maar niet registreren in de index)
+                    helper.shapes.Add(s);
+                return;
+            }
+
+            // nieuwe vorm → zowel in index als in lijst
+            helper.Registreer(s);
+            helper.shapes.Add(s);
         }
 
         private static double CorrectValue(string? input)

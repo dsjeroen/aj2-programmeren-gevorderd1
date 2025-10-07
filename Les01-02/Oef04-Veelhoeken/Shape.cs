@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Oef04_Veelhoeken
+namespace Oef04_Veelhoeken.Shapes
 {
     internal abstract class Shape
     {

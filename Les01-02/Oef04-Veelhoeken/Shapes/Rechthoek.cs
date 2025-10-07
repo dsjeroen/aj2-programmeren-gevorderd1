@@ -2,8 +2,8 @@
 {
     internal class Rechthoek : Shape
     {
-        private double _lengte;
-        private double _breedte;
+        private readonly double _lengte;
+        private readonly double _breedte;
 
         public Rechthoek() : this(10.0, 7.0) { }
 

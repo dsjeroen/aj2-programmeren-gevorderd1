@@ -10,25 +10,25 @@ namespace Oef04_Veelhoeken
         public int Keuze { get; set; } = -1;
 
 
-        public List<Shape> veelhoeken { get; } = new();
+        public List<Shape> shapes { get; } = new();
         private readonly HashSet<Shape> _index = new();
 
         public override string ToString()
         {
             var builder = new StringBuilder();
             builder.AppendLine("Overzicht vormen:");
-            builder.AppendLine($"Totaal aantal vormen: {veelhoeken.Count}");
+            builder.AppendLine($"Totaal aantal vormen: {shapes.Count}");
 
-            foreach (var d in veelhoeken.OfType<Driehoek>().Where(x => x.IsRechthoekigeDriehoek())) 
+            foreach (var d in shapes.OfType<Driehoek>().Where(x => x.IsRechthoekigeDriehoek())) 
                 builder.AppendLine(d.ToString());
 
-            foreach (var r in veelhoeken.OfType<Rechthoek>().Where(x => x.BerekenOppervlakte() > 50))
+            foreach (var r in shapes.OfType<Rechthoek>().Where(x => x.BerekenOppervlakte() > 50))
                 builder.AppendLine(r.ToString());
 
             return builder.ToString();
         }
 
-        public bool Bestaat(Shape v) => _index.Contains(v);
-        public void Registreer(Shape v) => _index.Add(v);
+        public bool Bestaat(Shape s) => _index.Contains(s);
+        public void Registreer(Shape s) => _index.Add(s);
     }
 }
