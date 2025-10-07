@@ -67,9 +67,6 @@ namespace Oef04_Veelhoeken
             double breedte = CorrectValue(Console.ReadLine());
 
             Rechthoek r = new(lengte, breedte);
-            overzichtVormen.VerhoogTotaalAantalVormen();
-            if (r.BerekenOppervlakte() > 50)
-                overzichtVormen.VerhoogAantalRechthoekenOppGr50();
         }
 
         private static void KeuzeDriehoek(Helper overzichtVormen)
@@ -81,14 +78,7 @@ namespace Oef04_Veelhoeken
             Console.Write("Geef de lengte van de zijde C: ");
             double lengteZijdeC = CorrectValue(Console.ReadLine());
 
-            Driehoek d = new(lengteZijdeA, lengteZijdeB, lengteZijdeC);
-            overzichtVormen.VerhoogTotaalAantalVormen();
-            if (d.IsRechthoekigeDriehoek())
-            {
-                //overzichtVormen.VerhoogRechthoekigeDriehoeken();
-                
-            }
-                
+            Driehoek d = new(lengteZijdeA, lengteZijdeB, lengteZijdeC);               
         }
 
         private static double CorrectValue(string? input)
