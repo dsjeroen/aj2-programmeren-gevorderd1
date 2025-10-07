@@ -1,4 +1,6 @@
-﻿namespace Oef04_Veelhoeken
+﻿using Oef04_Veelhoeken.Shapes;
+
+namespace Oef04_Veelhoeken
 {
     internal class Program
     {
@@ -6,7 +8,7 @@
         {
             WriteHeader();
 
-            OverzichtVormen overzichtVormen = new();
+            Helper overzichtVormen = new();
 
             do
             {
@@ -27,7 +29,7 @@
             Console.WriteLine("-------------------------");
         }
 
-        private static void BepaalKeuze(OverzichtVormen overzichtVormen)
+        private static void BepaalKeuze(Helper overzichtVormen)
         {
             bool valid;
             int keuze;
@@ -48,7 +50,7 @@
                 overzichtVormen.FirstTime = false;
         }
 
-        private static void VerwerkKeuze(OverzichtVormen overzichtVormen)
+        private static void VerwerkKeuze(Helper overzichtVormen)
         {
             if (overzichtVormen.Keuze == 1)
                 KeuzeRechthoek(overzichtVormen);
@@ -57,7 +59,7 @@
                 KeuzeDriehoek(overzichtVormen);
         }
 
-        private static void KeuzeRechthoek(OverzichtVormen overzichtVormen)
+        private static void KeuzeRechthoek(Helper overzichtVormen)
         {
             Console.Write("Geef de lengte van de rechthoek: ");
             double lengte = CorrectValue(Console.ReadLine());
@@ -70,7 +72,7 @@
                 overzichtVormen.VerhoogAantalRechthoekenOppGr50();
         }
 
-        private static void KeuzeDriehoek(OverzichtVormen overzichtVormen)
+        private static void KeuzeDriehoek(Helper overzichtVormen)
         {
             Console.Write("Geef de lengte van de zijde A: ");
             double lengteZijdeA = CorrectValue(Console.ReadLine());
@@ -82,7 +84,11 @@
             Driehoek d = new(lengteZijdeA, lengteZijdeB, lengteZijdeC);
             overzichtVormen.VerhoogTotaalAantalVormen();
             if (d.IsRechthoekigeDriehoek())
-                overzichtVormen.VerhoogRechthoekigeDriehoeken();
+            {
+                //overzichtVormen.VerhoogRechthoekigeDriehoeken();
+                
+            }
+                
         }
 
         private static double CorrectValue(string? input)
