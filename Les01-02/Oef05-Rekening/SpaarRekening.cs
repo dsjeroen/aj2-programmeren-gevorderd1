@@ -19,7 +19,6 @@ namespace Oef05_Rekening
 
         public override bool HaalAf(double bedrag)
         {
-            if (bedrag <= 0) return false;
             if (Saldo - bedrag < 0) return false;
             return base.HaalAf(bedrag);
         }
