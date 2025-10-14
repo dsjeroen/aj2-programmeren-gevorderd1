@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Les3Lagen.Domain\Les3Lagen.Domain.csproj" />
+    <ProjectReference Include="..\Les3Lagen.Persistance\Les3Lagen.Persistance.csproj" />
+    <ProjectReference Include="..\Les3Lagen.Presentation\Les3Lagen.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>
