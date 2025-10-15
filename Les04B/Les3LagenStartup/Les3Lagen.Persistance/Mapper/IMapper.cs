@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace Les3Lagen.Persistance.Mapper
 {
-    public interface IMapper<TDto, TModel>
+    public interface IMapper<D, M>
     {
-        // Zet opslagmodel om naar domainobject
-        TDto? MapToDTO(TModel model);
+        D? MapToDTO(M m);
+        M? MapToModel(D d);
 
-        // Zet domainobject om naar opslagmodel
-        TModel? MapToModel(TDto dto);
+        List<D> MapToDTO(List<M> models);
+        List<M> MapToModel(List<D> dtos);
     }
 }

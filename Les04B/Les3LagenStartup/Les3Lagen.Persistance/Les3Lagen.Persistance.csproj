@@ -11,8 +11,4 @@
     <ProjectReference Include="..\Les3Lagen.Domain\Les3Lagen.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repository\" />
-  </ItemGroup>
-
 </Project>

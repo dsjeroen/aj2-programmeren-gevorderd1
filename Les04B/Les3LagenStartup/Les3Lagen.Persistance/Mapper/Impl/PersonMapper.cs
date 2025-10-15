@@ -12,39 +12,32 @@ namespace Les3Lagen.Persistance.Mapper.Impl
     /// Zet opslagvorm (TModel = PersonModel) om naar domainvorm (TDto = Person) en terug.
     /// </summary>
     
-    public sealed class PersonMapper :AbstractMapper<Person, PersonModel>
+    public class PersonMapper :AbstractMapper<Person, PersonModel>
     {
         /// <summary>
         /// TModel (opslag) -> TDto (domain)
         /// </summary>
         public override Person? MapToDTO(PersonModel model)
         {
-            if (model is null) return null;
-                                                                      
-            var first = model.FirstName?.Trim() ?? "";
-            var last = model.LastName?.Trim() ?? "";
-
-            // Domain-object construeren (rijker type: heeft bv. FullName)
-            return new Person(
-                id: model.Id,
-                firstName: first,
-                lastName: last,
-                age: model.Age
-            );
+            if (model == null) return null;
+            var dto = new Person
+            {
+                Id = model.Id,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Age = model.Age
+            };
+            dto.FullName = dto.FirstName + " " + dto.LastName;
+            return dto;
         }
 
-        /// <summary>
-        /// TDto (domain) -> TModel (opslag)
-        /// </summary>
         public override PersonModel? MapToModel(Person dto)
         {
-            if (dto is null) return null;
-
-            // Domain -> opslagvorm; bv. FullName wordt NIET opgeslagen (afgeleid)
+            if (dto == null) return null;
             return new PersonModel
             {
                 Id = dto.Id,
-                FirstName = dto.FirstName,    // eventueel .Trim() als je dat bewaarbeleid wil
+                FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Age = dto.Age
             };

@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace Les3Lagen.Domain.Model
 {
-    public sealed class PersonModel
+    public class PersonModel
     {
-        public int Id { get; set; }
+        public int Id           { get; set; }
         public string FirstName { get; set; } = "";
-        public string LastName { get; set; } = "";
-        public int Age { get; set; }
+        public string LastName  { get; set; } = "";
+        public int Age          { get; set; }
+
+        public override string ToString()
+            => $"{Id} - {FirstName} - {LastName} - {Age}";
     }
 }

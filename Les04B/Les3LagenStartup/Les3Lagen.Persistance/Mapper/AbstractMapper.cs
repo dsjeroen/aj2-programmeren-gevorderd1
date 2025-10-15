@@ -6,12 +6,23 @@ using System.Threading.Tasks;
 
 namespace Les3Lagen.Persistance.Mapper
 {
-    public abstract class AbstractMapper<TDto, TModel> : IMapper<TDto, TModel>
+    public abstract class AbstractMapper<D, M> : IMapper<D, M>
     {
-        public virtual TDto? MapToDTO(TModel model)
-            => throw new NotImplementedException();
+        public abstract D? MapToDTO(M m);
+        public abstract M? MapToModel(D d);
 
-        public virtual TModel? MapToModel(TDto dto)
-            => throw new NotImplementedException();
+        public List<D> MapToDTO(List<M> models)
+        {
+            var dtos = new List<D>();
+            models.ForEach(m => dtos.Add(MapToDTO(m)!));
+            return dtos;
+        }
+
+        public List<M> MapToModel(List<D> dtos)
+        {
+            var models = new List<M>();
+            dtos.ForEach(d => models.Add(MapToModel(d)!));
+            return models;
+        }
     }
 }
