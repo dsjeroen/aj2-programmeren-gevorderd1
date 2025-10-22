@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36616.10 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef01-Films", "Oef01-Films\Oef01-Films.csproj", "{9F19CB6D-B839-4334-B778-2EFBDCD0BBBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oef02-Dieren", "Oef02-Dieren\Oef02-Dieren.csproj", "{90856C8C-3CC4-4318-B50A-A82F7A2AA61D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9F19CB6D-B839-4334-B778-2EFBDCD0BBBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F19CB6D-B839-4334-B778-2EFBDCD0BBBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F19CB6D-B839-4334-B778-2EFBDCD0BBBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F19CB6D-B839-4334-B778-2EFBDCD0BBBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90856C8C-3CC4-4318-B50A-A82F7A2AA61D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90856C8C-3CC4-4318-B50A-A82F7A2AA61D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90856C8C-3CC4-4318-B50A-A82F7A2AA61D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90856C8C-3CC4-4318-B50A-A82F7A2AA61D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8FF0F3B4-124F-4DE0-A22C-A9DEBAD707B7}
+	EndGlobalSection
+EndGlobal
