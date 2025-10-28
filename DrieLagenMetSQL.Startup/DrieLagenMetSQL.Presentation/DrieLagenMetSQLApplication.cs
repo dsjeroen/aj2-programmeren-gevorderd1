@@ -1,12 +1,73 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DrieLagenMetSQL.Domain;
 
 namespace DrieLagenMetSQL.Presentation
 {
-    internal class DrieLagenMetSQLApplication
+    /// <summary>
+    /// Applicatie-coördinator voor de console-app.
+    /// Stuurt de UI aan en spreekt de DomainController aan.
+    /// Bevat geen business- of opslaglogica.
+    /// </summary>
+
+    public sealed class DrieLagenMetSQLApplication
     {
+        private readonly DomainController _controller;
+        private readonly ConsolePresentation _ui;
+
+        public DrieLagenMetSQLApplication(DomainController controller, ConsolePresentation ui)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            ArgumentNullException.ThrowIfNull(ui);
+            _controller = controller;
+            _ui = ui;
+        }
+
+        public void Run()
+        {
+            Console.WriteLine("DrieLagenMetSQL demo – welkom\n");
+
+            bool running = true;
+            while (running)
+            {
+                try
+                {
+                    var keuze = _ui.ToonMenuEnLeesKeuze();
+                    switch (keuze)
+                    {
+                        case 'L':
+                            _ui.ToonAlleProducten();
+                            break;
+                        case 'A':
+                            _ui.VoegProductToeInteractief();
+                            break;
+                        case 'U':
+                            _ui.UpdateProductInteractief();
+                            break;
+                        case 'D':
+                            _ui.VerwijderProductInteractief();
+                            break;
+                        case 'Q':
+                            running = false;
+                            break;
+                        default:
+                            Console.WriteLine("Onbekende keuze.");
+                            break;
+                    }
+                }
+                catch (ApplicationException ex)
+                {
+                    // Toon de hoofdfout + inner DB-fout (als die er is)
+                    Console.WriteLine(
+                        $"Fout: {ex.Message}" +
+                        (ex.InnerException != null ? $" - {ex.InnerException.Message}" : "")
+                        + "\n");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Onverwachte fout: {ex.Message}\n");
+                }
+            }
+
+            Console.WriteLine("Tot ziens!\n");
+        }
     }
 }

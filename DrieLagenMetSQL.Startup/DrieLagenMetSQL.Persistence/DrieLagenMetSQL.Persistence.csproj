@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DrieLagenMetSQL.Domain\DrieLagenMetSQL.Domain.csproj" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Mapper\Impl\" />
-    <Folder Include="Repository\" />
+    <ProjectReference Include="..\DrieLagenMetSQL.Domain\DrieLagenMetSQL.Domain.csproj" />
   </ItemGroup>
 
 </Project>
