@@ -43,7 +43,13 @@ namespace DrieLagenMetSQL.Persistence.Repository
         // SQL-commando's als const's voor overzicht
         private const string SqlSelectAll = @"
             SELECT Id, Naam, Prijs, Voorraad
-            FROM   dbo.Products;";
+            FROM   dbo.Products
+            ORDER BY Naam;";
+
+        private const string SqlSelectByName = @"
+            SELECT Id, Naam, Prijs, Voorraad
+            FROM dbo.Products
+            WHERE Naam = @Naam;";
 
         private const string SqlInsert = @"
             INSERT INTO dbo.Products (Naam, Prijs, Voorraad)
@@ -57,6 +63,10 @@ namespace DrieLagenMetSQL.Persistence.Repository
                    Voorraad = @Voorraad
             WHERE  Id = @Id;";
 
+        private const string SqlDeleteByName = @"
+            DELETE FROM dbo.Products
+            WHERE Naam = @Naam;";
+
         private const string SqlDelete = @"
             DELETE FROM dbo.Products
             WHERE  Id = @Id;";
@@ -65,58 +75,107 @@ namespace DrieLagenMetSQL.Persistence.Repository
 
 
         /// <summary>
-        /// Haalt alle producten op en geeft ze terug als DTO-lijst (nooit interne modellen of ruwe readers lekken).
+        /// Haalt alle producten op uit de database.
+        /// 
+        /// - Leest ruwe data via ADO.NET (DataReader).
+        /// - Map't elke rij eerst naar een ProductModel 
+        ///   (de interne opslagrepresentatie van de DB).
+        /// - Gebruikt vervolgens ProductMapper om te converteren 
+        ///   naar ProductDTO (de transportvorm naar de Domain-laag).
+        ///
+        /// Ontwerpprincipes:
+        /// - Enkel de persistence-laag kent de databasekolommen.
+        /// - De Domain-laag ziet enkel DTO's (geen SqlConnection, DataReader of Model).
+        /// - Verandert de DB-structuur? Enkel deze laag en de mapper moeten aangepast worden.
         /// </summary>
         public IReadOnlyList<ProductDTO> GetAll()
         {
-            var models = new List<ProductModel>();
+            var models = new List<ProductModel>(); // interne lijst voor opslagmodellen
 
             try
             {
                 using var connection = _db.Create();
                 connection.Open();
 
-                //// (optioneel debug) verifieer server + database
-                //using (var pingCmd = connection.CreateCommand())
-                //{
-                //    pingCmd.CommandText = "SELECT DB_NAME(), @@SERVERNAME";
-                //    using var ping = pingCmd.ExecuteReader();
-                //    if (ping.Read())
-                //        Console.WriteLine($"[debug] DB={ping.GetString(0)}  Server={ping.GetString(1)}");
-                //}
-
                 using var cmd = connection.CreateCommand();
-                cmd.CommandText = SqlSelectAll;                
+                cmd.CommandText = SqlSelectAll; // SELECT Id, Naam, Prijs, Voorraad ORDER BY Naam
 
                 using var reader = cmd.ExecuteReader();
 
-                // Koppel kolommen veilig op naam i.p.v. vaste indexen.
-                // Zo blijft de code robuust bij kolomvolgorde-wijzigingen,
-                // en is dit sneller dan reader["Naam"] (éénmalige lookup, daarna via index).
-                int ordId = reader.GetOrdinal("Id");
-                int ordNaam = reader.GetOrdinal("Naam");
-                int ordPrijs = reader.GetOrdinal("Prijs");
-                int ordVoorraad = reader.GetOrdinal("Voorraad");
-
+                // Mapping: één rij per product → ProductModel
                 while (reader.Read())
                 {
                     models.Add(new ProductModel
                     {
-                        Id = reader.GetInt32(ordId),
-                        Naam = reader.GetString(ordNaam),
-                        Prijs = reader.GetDecimal(ordPrijs),
-                        Voorraad = reader.GetInt32(ordVoorraad)
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        Naam = reader.GetString(reader.GetOrdinal("Naam")),
+                        Prijs = reader.GetDecimal(reader.GetOrdinal("Prijs")),
+                        Voorraad = reader.GetInt32(reader.GetOrdinal("Voorraad"))
                     });
                 }
             }
-            catch (System.Data.Common.DbException ex)
+            catch (DbException ex)
             {
-                // Context toevoegen; geen DB-details lekken naar Domain/UI
+                // Domain of UI mogen geen DB-fouten zien → wrap in ApplicationException
                 throw new ApplicationException("Fout bij ophalen van producten.", ex);
             }
 
-            return _mapper.MapToDTO(models); // geeft IReadOnlyList<ProductDTO> terug
+            // Mapping naar DTO's (transportobjecten) via mapper
+            return _mapper.MapToDTO(models);
         }
+
+
+        /// <summary>
+        /// Haalt één product op via zijn business key (<paramref name="name"/>).
+        /// 
+        /// - Valideert de input (business key verplicht).
+        /// - Leest één rij uit de DB (WHERE Naam = @Naam).
+        /// - Map't de DataRecord eerst naar een <see cref="ProductModel"/>.
+        /// - Converteert dat vervolgens via de <see cref="ProductMapper"/> 
+        ///   naar een <see cref="ProductDTO"/> dat naar de DomainController wordt teruggegeven.
+        ///
+        /// Ontwerpprincipes:
+        /// - “ByKey” = altijd via een business key (hier: Naam, uniek in de tabel).
+        /// - Scheiding van verantwoordelijkheden: 
+        ///     * ADO.NET-code blijft hier in de persistence-laag.
+        ///     * Mapping blijft expliciet in Mapper.
+        ///     * Domain-laag weet niets van SQL of verbindingen.
+        /// </summary>
+        public ProductDTO? GetByKey(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Naam (business key) is vereist.", nameof(name));
+
+            try
+            {
+                using var connection = _db.Create();
+                connection.Open();
+
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = SqlSelectByName; // SELECT ... WHERE Naam = @Naam
+                AddNameParameter(cmd, name);
+
+                using var reader = cmd.ExecuteReader(CommandBehavior.SingleRow);
+                if (!reader.Read()) return null; // niets gevonden → null
+
+                // 1) Ruwe data → opslagmodel
+                var model = new ProductModel
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Naam = reader.GetString(reader.GetOrdinal("Naam")),
+                    Prijs = reader.GetDecimal(reader.GetOrdinal("Prijs")),
+                    Voorraad = reader.GetInt32(reader.GetOrdinal("Voorraad"))
+                };
+
+                // 2) Opslagmodel → DTO
+                return _mapper.MapToDTO(model);
+            }
+            catch (DbException ex)
+            {
+                throw new ApplicationException("Fout bij ophalen van product via Naam.", ex);
+            }
+        }
+
 
         /// <summary>
         /// Voegt een product toe. Id wordt door de DB toegekend (SCOPE_IDENTITY()).
@@ -180,9 +239,37 @@ namespace DrieLagenMetSQL.Persistence.Repository
 
 
         /// <summary>
+        /// Verwijdert een bestaand product op basis van een key.
+        /// </summary>
+        public bool DeleteByKey(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Naam (business key) is vereist.", nameof(name));
+
+            try
+            {
+                using var connection = _db.Create();
+                connection.Open();
+
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = SqlDeleteByName;
+                AddNameParameter(cmd, name);
+
+                var rows = cmd.ExecuteNonQuery();
+                if (rows == 0) return false; // niets gevonden
+                return true;
+            }
+            catch (DbException ex)
+            {
+                throw new ApplicationException("Fout bij verwijderen op basis van Naam.", ex);
+            }
+        }
+
+
+        /// <summary>
         /// Verwijdert een bestaand product op basis van Id. Gooit KeyNotFoundException als niets verwijderd werd.
         /// </summary>
-        public void Delete(ProductDTO productDto)
+        public bool Delete(ProductDTO productDto)
         {
             ValidateDto(productDto, requireId: true, validateContent: false);
 
@@ -197,7 +284,11 @@ namespace DrieLagenMetSQL.Persistence.Repository
 
                 var rows = cmd.ExecuteNonQuery();
                 if (rows == 0)
+                {
                     throw new KeyNotFoundException("Product niet gevonden voor delete.");
+                }
+                return true;
+
             }
             catch (DbException ex)
             {
@@ -251,5 +342,24 @@ namespace DrieLagenMetSQL.Persistence.Repository
             pId.Value = id;
             cmd.Parameters.Add(pId);
         }
+
+        /// <summary>Voegt het @Naam parameter toe aan het commando.</summary>
+        private static void AddNameParameter(IDbCommand cmd, string naam)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = "@Naam";
+            p.Value = naam ?? throw new ArgumentNullException(nameof(naam));
+            cmd.Parameters.Add(p);
+        }
+
+        /// <summary>Mapt de waarden naar ProductDTO.</summary>
+        private static ProductDTO Map(IDataRecord r) => new()
+        {
+            Id = r.GetInt32(r.GetOrdinal("Id")),
+            Naam = r.GetString(r.GetOrdinal("Naam")),
+            Prijs = r.GetDecimal(r.GetOrdinal("Prijs")),
+            Voorraad = r.GetInt32(r.GetOrdinal("Voorraad"))
+        };
+
     }
 }
