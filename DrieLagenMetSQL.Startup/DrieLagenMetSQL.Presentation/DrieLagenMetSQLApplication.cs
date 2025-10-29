@@ -8,7 +8,7 @@ namespace DrieLagenMetSQL.Presentation
     /// Bevat geen business- of opslaglogica.
     /// </summary>
 
-    public sealed class DrieLagenMetSQLApplication
+    public class DrieLagenMetSQLApplication
     {
         private readonly DomainController _controller;
         private readonly ConsolePresentation _ui;
@@ -21,6 +21,10 @@ namespace DrieLagenMetSQL.Presentation
             _ui = ui;
         }
 
+        /// <summary>
+        /// Start de applicatie-loop.
+        /// Toont het hoofdmenu, verwerkt keuzes en handelt fouten af.
+        /// </summary>
         public void Run()
         {
             Console.WriteLine("DrieLagenMetSQL demo – welkom\n");
@@ -30,24 +34,30 @@ namespace DrieLagenMetSQL.Presentation
             {
                 try
                 {
-                    var keuze = _ui.ToonMenuEnLeesKeuze();
+                    var keuze = ConsolePresentation.ToonMenuEnLeesKeuze();
+
                     switch (keuze)
                     {
                         case 'L':
                             _ui.ToonAlleProducten();
                             break;
+
                         case 'A':
                             _ui.VoegProductToeInteractief();
                             break;
+
                         case 'U':
                             _ui.UpdateProductInteractief();
                             break;
+
                         case 'D':
                             _ui.VerwijderProductInteractief();
                             break;
+
                         case 'Q':
                             running = false;
                             break;
+
                         default:
                             Console.WriteLine("Onbekende keuze.");
                             break;
@@ -55,14 +65,15 @@ namespace DrieLagenMetSQL.Presentation
                 }
                 catch (ApplicationException ex)
                 {
-                    // Toon de hoofdfout + inner DB-fout (als die er is)
+                    // Toon de hoofdfout en, indien aanwezig, de inner DB-fout.
                     Console.WriteLine(
                         $"Fout: {ex.Message}" +
-                        (ex.InnerException != null ? $" - {ex.InnerException.Message}" : "")
-                        + "\n");
+                        (ex.InnerException != null ? $" - {ex.InnerException.Message}" : "") +
+                        "\n");
                 }
                 catch (Exception ex)
                 {
+                    // Vangt onverwachte fouten op (niet-domeinspecifiek).
                     Console.WriteLine($"Onverwachte fout: {ex.Message}\n");
                 }
             }

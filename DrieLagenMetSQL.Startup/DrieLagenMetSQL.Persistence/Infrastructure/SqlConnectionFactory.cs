@@ -4,30 +4,23 @@ using System.Data;
 namespace DrieLagenMetSQL.Persistence.Infrastructure
 {
     /// <summary>
-    /// Concrete fabriek die SQL Server connecties aanmaakt op basis van één centrale connection string.
-    /// 
-    /// Voordelen:
-    /// - Eén bron van waarheid voor de connection string (config/Startup).
-    /// - Repositories blijven los van Microsoft.Data.SqlClient (programmeer tegen IDbConnection).
-    /// - Eenvoudig te vervangen door bv. SQLiteConnectionFactory, Test/FakeFactory, …
+    /// Concrete fabriek die SQL Server-connecties aanmaakt op basis van één centrale connection string.
+    /// Eén bron van waarheid voor de string; eenvoudig te vervangen door andere factory (SQLite, Fake, …).
+    /// Sealed class: bedoeld als definitieve infrastructuurimplementatie, niet uitbreidbaar.
     /// </summary>
 
     public sealed class SqlConnectionFactory :IDbConnectionFactory
     {
         private readonly string _connectionString;
 
-        /// <summary>
-        /// Geef de connection string aan via Startup/config.
-        /// </summary>
+        /// <summary>Ontvangt de connection string via Startup of configuratie.</summary>
         public SqlConnectionFactory(string connectionString)
         {
-            _connectionString = connectionString 
+            _connectionString = connectionString
                 ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        /// <summary>
-        /// Maakt een *gesloten* SqlConnection. De aanroeper opent/Dispose't.
-        /// </summary>
+        /// <summary>Maakt een gesloten SqlConnection; aanroeper opent en sluit zelf (using/Dispose).</summary>
         public IDbConnection Create() => new SqlConnection(_connectionString);
     }
 }

@@ -4,42 +4,60 @@ using DrieLagenMetSQL.Domain.Repository;
 namespace DrieLagenMetSQL.Domain
 {
     /// <summary>
-    /// Use-case coördinator voor Producten.
-    /// Werkt met DTO's (transportvorm), niet met opslagmodellen of entiteiten.
-    /// Domain kent de repository enkel via het contract IRepository<ProductDTO>.
+    /// Generieke coördinator voor product-use-cases.
+    /// Werkt uitsluitend met DTO’s en het repository-contract.
+    /// Bevat validatie en lichte normalisatie, geen opslaglogica.
     /// </summary>
 
-    public sealed class DomainController
+    public class DomainController
     {
-        private readonly IRepository<ProductDTO> _products;
+        private readonly IRepository<ProductDTO> _repository;
 
-        /// <summary>Injectie van de concrete repository (Wordt in Startup gekozen).</summary>
-        public DomainController(IRepository<ProductDTO> products)
+        /// <summary>Injectie van de concrete repository (bepaald in Startup).</summary>
+        public DomainController(IRepository<ProductDTO> repository)
         {
-            ArgumentNullException.ThrowIfNull(products);
-            _products = products;
+            ArgumentNullException.ThrowIfNull(repository);
+            _repository = repository;
         }
 
-        /// <summary>
-        /// Use-case: nieuw product toevoegen (basisvalidatie + normalisatie + repo-call).
-        /// </summary>
-        public ProductDTO AddNewProduct(ProductDTO productDto)
+        /// <summary>Alle producten ophalen (read-only lijst).</summary>
+        public IReadOnlyList<ProductDTO> GetAll()
         {
-            ArgumentNullException.ThrowIfNull(productDto);
-            if (string.IsNullOrWhiteSpace(productDto.Naam))
-                throw new ArgumentException("Naam is verplicht.", nameof(productDto));
-            if (productDto.Prijs <= 0m)
-                throw new ArgumentOutOfRangeException(nameof(productDto), "Prijs moet > 0 zijn.");
-            if (productDto.Voorraad < 0)
-                throw new ArgumentOutOfRangeException(nameof(productDto), "Voorraad kan niet negatief zijn.");
-
-            // lichte normalisatie
-            productDto.Naam = productDto.Naam.Trim();
-
-            // Contract aanroepen – controller weet niet hoe opslag werkt (en dat is goed)
             try
             {
-                return _products.Add(productDto);
+                return _repository.GetAll();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Fout bij ophalen van producten.", ex);
+            }
+        }
+
+        /// <summary>Product ophalen via business key (Naam).</summary>
+        public ProductDTO? GetByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Naam is verplicht.", nameof(key));
+
+            try
+            {
+                return _repository.GetByKey(NormalizeKey(key));
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Fout bij ophalen van product via naam.", ex);
+            }
+        }
+
+        /// <summary>Nieuw product toevoegen na basisvalidatie.</summary>
+        public ProductDTO Add(ProductDTO dto)
+        {
+            Validate(dto, requireId: false);
+            var normalized = dto with { Naam = dto.Naam.Trim() };
+
+            try
+            {
+                return _repository.Add(normalized);
             }
             catch (Exception ex)
             {
@@ -47,19 +65,52 @@ namespace DrieLagenMetSQL.Domain
             }
         }
 
-        /// <summary>Alle producten ophalen (immutable list).</summary>
-        public IReadOnlyList<ProductDTO> GetAllProducts() => _products.GetAll();
+        /// <summary>Bestaand product bijwerken (validatie + repo-call).</summary>
+        public ProductDTO Update(ProductDTO dto)
+        {
+            Validate(dto, requireId: true);
+            var normalized = dto with { Naam = dto.Naam.Trim() };
 
-        /// <summary>Product verwijderen op basis van DTO (Id vereist en > 0).</summary>
-        public void DeleteProduct(ProductDTO dto)
+            try
+            {
+                return _repository.Update(normalized);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Fout bij bijwerken van product.", ex);
+            }
+        }
+
+        /// <summary>Product verwijderen via business key (Naam).</summary>
+        public void DeleteByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Naam is verplicht.", nameof(key));
+
+            try
+            {
+                var success = _repository.DeleteByKey(NormalizeKey(key));
+
+                if (!success)
+                    throw new KeyNotFoundException("Geen product gevonden met opgegeven naam.");
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Fout bij verwijderen van product via naam.", ex);
+            }
+        }
+
+        /// <summary>Product verwijderen via Id (DTO vereist).</summary>
+        public void Delete(ProductDTO dto)
         {
             ArgumentNullException.ThrowIfNull(dto);
+
             if (dto.Id <= 0)
                 throw new ArgumentOutOfRangeException(nameof(dto), "Id moet > 0 zijn.");
 
             try
             {
-                _products.Delete(dto);
+                _repository.Delete(dto);
             }
             catch (Exception ex)
             {
@@ -67,29 +118,26 @@ namespace DrieLagenMetSQL.Domain
             }
         }
 
-        /// <summary>Product bijwerken (basisvalidatie + update via repository).</summary>
-        public ProductDTO UpdateProduct(ProductDTO dto)
+
+        // ===== helpers =====
+
+        private static void Validate(ProductDTO dto, bool requireId)
         {
             ArgumentNullException.ThrowIfNull(dto);
-            if (dto.Id <= 0)
+
+            if (requireId && dto.Id <= 0)
                 throw new ArgumentOutOfRangeException(nameof(dto), "Id moet > 0 zijn.");
+
             if (string.IsNullOrWhiteSpace(dto.Naam))
                 throw new ArgumentException("Naam is verplicht.", nameof(dto));
+
             if (dto.Prijs <= 0m)
                 throw new ArgumentOutOfRangeException(nameof(dto), "Prijs moet > 0 zijn.");
+
             if (dto.Voorraad < 0)
                 throw new ArgumentOutOfRangeException(nameof(dto), "Voorraad kan niet negatief zijn.");
-
-            dto.Naam = dto.Naam.Trim();
-
-            try
-            {
-                return _products.Update(dto);
-            }
-            catch (Exception ex)
-            {
-                throw new ApplicationException("Fout bij bijwerken van product.", ex);
-            }
         }
+
+        private static string NormalizeKey(string key) => key.Trim();
     }
 }

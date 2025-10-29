@@ -1,6 +1,6 @@
 ﻿using DrieLagenMetSQL.Domain.DTO;
 using DrieLagenMetSQL.Domain.Repository;
-using DrieLagenMetSQL.Persistence.Infrastructure;   // <-- nodig voor IDbConnectionFactory
+using DrieLagenMetSQL.Persistence.Infrastructure;
 using DrieLagenMetSQL.Persistence.Mapper.Impl;
 using DrieLagenMetSQL.Persistence.Model;
 using System.Data;
@@ -10,40 +10,19 @@ namespace DrieLagenMetSQL.Persistence.Repository
 {
     /// <summary>
     /// SQL-repository voor Producten.
-    ///
-    /// Deze repository:
-    /// - Slaat ProductModel op in de database (tabel [dbo].[Products]).
-    /// - Geeft naar buiten ProductDTO terug.
-    /// - Bevat uitsluitend opslaglogica (geen businessregels).
-    ///   Validatie en use-case-coördinatie gebeuren in DomainController.
-    ///
-    /// Dependency Inversion:
-    /// - De repository vraagt enkel een IDbConnectionFactory aan.
-    /// - Startup beslist welk database-type en welke connection string gebruikt worden.
-    /// - Hierdoor is de repository losgekoppeld van UI, Domain en specifieke database-technologie.
-    ///
-    /// Mapper-scheiding:
-    /// - ProductMapper vertaalt tussen ProductDTO (transport) en ProductModel (opslag).
-    /// - Hierdoor lekt de database-structuur nooit door naar Domain of UI (Single Responsibility + Clear Boundaries).
-    ///
-    /// Resultaat:
-    /// - Repository is testbaar (bv. met FakeConnectionFactory of in-memory DB).
-    /// - Repository kan eenvoudig vervangen worden (SQL → SQLite → Postgres).
-    /// - Wijzigingen in database-structuur vereisen enkel aanpassing in mapper + model, niet in Domain.
-    ///
-    /// Laagflow:
-    /// Presentation → DomainController → IRepository<ProductDTO> → ProductADORepository → DB
+    /// Bevat opslaglogica via ADO.NET; Domain ziet enkel DTO's, geen DB-details.
+    /// Sealed class: concrete ADO-implementatie, niet uitbreidbaar.
     /// </summary>
 
     public sealed class ProductADORepository :IRepository<ProductDTO>
     {
-        private readonly IDbConnectionFactory _db;      // via injectie (Startup)
-        private readonly ProductMapper _mapper = new(); // veld-naar-veld mapping
+        private readonly IDbConnectionFactory _db;
+        private readonly ProductMapper _mapper = new();
 
-        // SQL-commando's als const's voor overzicht
+        // SQL-commando's
         private const string SqlSelectAll = @"
             SELECT Id, Naam, Prijs, Voorraad
-            FROM   dbo.Products
+            FROM dbo.Products
             ORDER BY Naam;";
 
         private const string SqlSelectByName = @"
@@ -58,10 +37,10 @@ namespace DrieLagenMetSQL.Persistence.Repository
 
         private const string SqlUpdate = @"
             UPDATE dbo.Products
-            SET    Naam = @Naam,
-                   Prijs = @Prijs,
-                   Voorraad = @Voorraad
-            WHERE  Id = @Id;";
+            SET Naam = @Naam,
+                Prijs = @Prijs,
+                Voorraad = @Voorraad
+            WHERE Id = @Id;";
 
         private const string SqlDeleteByName = @"
             DELETE FROM dbo.Products
@@ -69,28 +48,16 @@ namespace DrieLagenMetSQL.Persistence.Repository
 
         private const string SqlDelete = @"
             DELETE FROM dbo.Products
-            WHERE  Id = @Id;";
+            WHERE Id = @Id;";
+
 
         public ProductADORepository(IDbConnectionFactory db) => _db = db;
 
 
-        /// <summary>
-        /// Haalt alle producten op uit de database.
-        /// 
-        /// - Leest ruwe data via ADO.NET (DataReader).
-        /// - Map't elke rij eerst naar een ProductModel 
-        ///   (de interne opslagrepresentatie van de DB).
-        /// - Gebruikt vervolgens ProductMapper om te converteren 
-        ///   naar ProductDTO (de transportvorm naar de Domain-laag).
-        ///
-        /// Ontwerpprincipes:
-        /// - Enkel de persistence-laag kent de databasekolommen.
-        /// - De Domain-laag ziet enkel DTO's (geen SqlConnection, DataReader of Model).
-        /// - Verandert de DB-structuur? Enkel deze laag en de mapper moeten aangepast worden.
-        /// </summary>
+        /// <summary>Haalt alle producten op en map’t ze naar DTO’s.</summary>
         public IReadOnlyList<ProductDTO> GetAll()
         {
-            var models = new List<ProductModel>(); // interne lijst voor opslagmodellen
+            var models = new List<ProductModel>();
 
             try
             {
@@ -98,11 +65,9 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 connection.Open();
 
                 using var cmd = connection.CreateCommand();
-                cmd.CommandText = SqlSelectAll; // SELECT Id, Naam, Prijs, Voorraad ORDER BY Naam
+                cmd.CommandText = SqlSelectAll;
 
                 using var reader = cmd.ExecuteReader();
-
-                // Mapping: één rij per product → ProductModel
                 while (reader.Read())
                 {
                     models.Add(new ProductModel
@@ -116,31 +81,14 @@ namespace DrieLagenMetSQL.Persistence.Repository
             }
             catch (DbException ex)
             {
-                // Domain of UI mogen geen DB-fouten zien → wrap in ApplicationException
                 throw new ApplicationException("Fout bij ophalen van producten.", ex);
             }
 
-            // Mapping naar DTO's (transportobjecten) via mapper
             return _mapper.MapToDTO(models);
         }
 
 
-        /// <summary>
-        /// Haalt één product op via zijn business key (<paramref name="name"/>).
-        /// 
-        /// - Valideert de input (business key verplicht).
-        /// - Leest één rij uit de DB (WHERE Naam = @Naam).
-        /// - Map't de DataRecord eerst naar een <see cref="ProductModel"/>.
-        /// - Converteert dat vervolgens via de <see cref="ProductMapper"/> 
-        ///   naar een <see cref="ProductDTO"/> dat naar de DomainController wordt teruggegeven.
-        ///
-        /// Ontwerpprincipes:
-        /// - “ByKey” = altijd via een business key (hier: Naam, uniek in de tabel).
-        /// - Scheiding van verantwoordelijkheden: 
-        ///     * ADO.NET-code blijft hier in de persistence-laag.
-        ///     * Mapping blijft expliciet in Mapper.
-        ///     * Domain-laag weet niets van SQL of verbindingen.
-        /// </summary>
+        /// <summary>Haalt één product op via business key (Naam).</summary>
         public ProductDTO? GetByKey(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -152,13 +100,13 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 connection.Open();
 
                 using var cmd = connection.CreateCommand();
-                cmd.CommandText = SqlSelectByName; // SELECT ... WHERE Naam = @Naam
+                cmd.CommandText = SqlSelectByName;
                 AddNameParameter(cmd, name);
 
                 using var reader = cmd.ExecuteReader(CommandBehavior.SingleRow);
-                if (!reader.Read()) return null; // niets gevonden → null
+                if (!reader.Read())
+                    return null;
 
-                // 1) Ruwe data → opslagmodel
                 var model = new ProductModel
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -167,7 +115,6 @@ namespace DrieLagenMetSQL.Persistence.Repository
                     Voorraad = reader.GetInt32(reader.GetOrdinal("Voorraad"))
                 };
 
-                // 2) Opslagmodel → DTO
                 return _mapper.MapToDTO(model);
             }
             catch (DbException ex)
@@ -177,9 +124,7 @@ namespace DrieLagenMetSQL.Persistence.Repository
         }
 
 
-        /// <summary>
-        /// Voegt een product toe. Id wordt door de DB toegekend (SCOPE_IDENTITY()).
-        /// </summary>
+        /// <summary>Voegt een product toe. DB kent Id toe (SCOPE_IDENTITY()).</summary>
         public ProductDTO Add(ProductDTO productDto)
         {
             ValidateDto(productDto, requireId: false);
@@ -197,8 +142,8 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 var scalar = cmd.ExecuteScalar();
                 if (scalar is not int newId)
                     throw new InvalidOperationException("Kon nieuw Id niet ophalen.");
-                productModel.Id = newId;
 
+                productModel.Id = newId;
                 return _mapper.MapToDTO(productModel);
             }
             catch (DbException ex)
@@ -208,12 +153,10 @@ namespace DrieLagenMetSQL.Persistence.Repository
         }
 
 
-        /// Wijzigt een bestaand product. Gooit KeyNotFoundException als de rij niet bestaat.
-        /// </summary>
+        /// <summary>Wijzigt een bestaand product. Gooit KeyNotFoundException als niets gevonden.</summary>
         public ProductDTO Update(ProductDTO dto)
         {
             ValidateDto(dto, requireId: true);
-
             var productModel = _mapper.MapToModel(dto);
 
             try
@@ -227,7 +170,9 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 AddIdParameter(cmd, productModel.Id);
 
                 var rows = cmd.ExecuteNonQuery();
-                if (rows == 0) throw new KeyNotFoundException("Product niet gevonden voor update.");
+
+                if (rows == 0)
+                    throw new KeyNotFoundException("Product niet gevonden voor update.");
 
                 return _mapper.MapToDTO(productModel);
             }
@@ -238,9 +183,7 @@ namespace DrieLagenMetSQL.Persistence.Repository
         }
 
 
-        /// <summary>
-        /// Verwijdert een bestaand product op basis van een key.
-        /// </summary>
+        /// <summary>Verwijdert een product via business key (Naam).</summary>
         public bool DeleteByKey(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -256,7 +199,10 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 AddNameParameter(cmd, name);
 
                 var rows = cmd.ExecuteNonQuery();
-                if (rows == 0) return false; // niets gevonden
+
+                if (rows == 0)
+                    return false;
+
                 return true;
             }
             catch (DbException ex)
@@ -266,9 +212,7 @@ namespace DrieLagenMetSQL.Persistence.Repository
         }
 
 
-        /// <summary>
-        /// Verwijdert een bestaand product op basis van Id. Gooit KeyNotFoundException als niets verwijderd werd.
-        /// </summary>
+        /// <summary>Verwijdert een product via Id. Gooit KeyNotFoundException als niets verwijderd.</summary>
         public bool Delete(ProductDTO productDto)
         {
             ValidateDto(productDto, requireId: true, validateContent: false);
@@ -283,18 +227,20 @@ namespace DrieLagenMetSQL.Persistence.Repository
                 AddIdParameter(cmd, productDto.Id);
 
                 var rows = cmd.ExecuteNonQuery();
-                if (rows == 0)
-                {
-                    throw new KeyNotFoundException("Product niet gevonden voor delete.");
-                }
-                return true;
 
+                if (rows == 0)
+                    throw new KeyNotFoundException("Product niet gevonden voor delete.");
+
+                return true;
             }
             catch (DbException ex)
             {
                 throw new ApplicationException("Fout bij verwijderen van product.", ex);
             }
         }
+
+
+        // ===== Helpers =====
 
         private static void ValidateDto(ProductDTO productDto, bool requireId, bool validateContent = true)
         {
@@ -303,35 +249,37 @@ namespace DrieLagenMetSQL.Persistence.Repository
             if (requireId && productDto.Id <= 0)
                 throw new ArgumentOutOfRangeException(nameof(productDto), "Id moet > 0 zijn.");
 
-            if (!validateContent) return; // ⬅️ voor Delete
+            if (!validateContent)
+                return;
 
             if (string.IsNullOrWhiteSpace(productDto.Naam))
                 throw new ArgumentException("Naam is verplicht.", nameof(productDto));
+
             if (productDto.Prijs <= 0m)
                 throw new ArgumentOutOfRangeException(nameof(productDto), "Prijs moet > 0 zijn.");
+
             if (productDto.Voorraad < 0)
                 throw new ArgumentOutOfRangeException(nameof(productDto), "Voorraad kan niet negatief zijn.");
-
-            productDto.Naam = productDto.Naam.Trim();
         }
-
-        // ---------- helpers ----------
 
         /// <summary>Voegt Naam/Prijs/Voorraad parameters toe aan het commando.</summary>
         private static void AddCommonParameters(IDbCommand cmd, ProductModel productModel)
         {
             var pNaam = cmd.CreateParameter();
-            pNaam.ParameterName = "@Naam"; pNaam.Value = productModel.Naam;
+            pNaam.ParameterName = "@Naam";
+            pNaam.Value = productModel.Naam;
 
             var pPrijs = cmd.CreateParameter();
-            pPrijs.ParameterName = "@Prijs"; pPrijs.Value = productModel.Prijs;
+            pPrijs.ParameterName = "@Prijs";
+            pPrijs.Value = productModel.Prijs;
 
-            var pVoor = cmd.CreateParameter();
-            pVoor.ParameterName = "@Voorraad"; pVoor.Value = productModel.Voorraad;
+            var pVoorraad = cmd.CreateParameter();
+            pVoorraad.ParameterName = "@Voorraad";
+            pVoorraad.Value = productModel.Voorraad;
 
             cmd.Parameters.Add(pNaam);
             cmd.Parameters.Add(pPrijs);
-            cmd.Parameters.Add(pVoor);
+            cmd.Parameters.Add(pVoorraad);
         }
 
         /// <summary>Voegt het @Id parameter toe aan het commando.</summary>
@@ -346,20 +294,10 @@ namespace DrieLagenMetSQL.Persistence.Repository
         /// <summary>Voegt het @Naam parameter toe aan het commando.</summary>
         private static void AddNameParameter(IDbCommand cmd, string naam)
         {
-            var p = cmd.CreateParameter();
-            p.ParameterName = "@Naam";
-            p.Value = naam ?? throw new ArgumentNullException(nameof(naam));
-            cmd.Parameters.Add(p);
+            var pNaam = cmd.CreateParameter();
+            pNaam.ParameterName = "@Naam";
+            pNaam.Value = naam ?? throw new ArgumentNullException(nameof(naam));
+            cmd.Parameters.Add(pNaam);
         }
-
-        /// <summary>Mapt de waarden naar ProductDTO.</summary>
-        private static ProductDTO Map(IDataRecord r) => new()
-        {
-            Id = r.GetInt32(r.GetOrdinal("Id")),
-            Naam = r.GetString(r.GetOrdinal("Naam")),
-            Prijs = r.GetDecimal(r.GetOrdinal("Prijs")),
-            Voorraad = r.GetInt32(r.GetOrdinal("Voorraad"))
-        };
-
     }
 }

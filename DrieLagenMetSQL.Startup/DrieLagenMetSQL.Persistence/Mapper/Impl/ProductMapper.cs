@@ -5,18 +5,15 @@ namespace DrieLagenMetSQL.Persistence.Mapper.Impl
 {
     /// <summary>
     /// Concrete mapper tussen transportvorm (ProductDTO) en opslagvorm (ProductModel).
-    ///
-    /// Doel:
-    /// - Houdt UI/Domain vrij van DB-structuur (losse koppeling).
-    /// - Wijzigingen in de database vereisen enkel aanpassingen hier, niet in hoger gelegen lagen.
-    /// - Geen businesslogica in mappers; enkel pure datavertaling.
+    /// Houdt UI/Domain vrij van DB-structuur en bevat enkel pure datavertaling.
+    /// Sealed class: deterministische implementatie, niet uitbreidbaar.
     /// </summary>
 
     public sealed class ProductMapper :AbstractMapper<ProductDTO, ProductModel>
     {
+        /// <summary>Mapt opslagmodel naar DTO (readrichting).</summary>
         public override ProductDTO MapToDTO(ProductModel model)
         {
-            // Geen businesslogica hier; pure veld-naar-veld mapping.
             return new ProductDTO
             {
                 Id = model.Id,
@@ -26,9 +23,9 @@ namespace DrieLagenMetSQL.Persistence.Mapper.Impl
             };
         }
 
+        /// <summary>Mapt DTO naar opslagmodel (writerichting).</summary>
         public override ProductModel MapToModel(ProductDTO dto)
         {
-            // Lichte normalisatie kan (bv. Trim op strings); geen validatieregels hier.
             return new ProductModel
             {
                 Id = dto.Id,

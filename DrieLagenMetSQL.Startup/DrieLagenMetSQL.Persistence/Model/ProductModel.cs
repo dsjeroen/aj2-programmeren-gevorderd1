@@ -1,21 +1,23 @@
 ﻿namespace DrieLagenMetSQL.Persistence.Model
 {
     /// <summary>
-    /// Opslagmodel dat de interne representatie van "Product" voorstelt in de Persistence-laag.
-    ///
-    /// Dit model weerspiegelt de structuur zoals ze in de database wordt opgeslagen
-    /// (bijvoorbeeld kolomnamen en types), en kan dus verschillen van de domein-entiteit.
-    ///
-    /// Wordt:
-    /// - Gebruikt door repositories en mappers.
-    /// - NIET gebruikt door UI of Domain.
-    /// - Door de mapper vertaald naar/van ProductDTO.
+    /// Opslagmodel van "Product" binnen de Persistence-laag.
+    /// Weerspiegelt de database-structuur (kolommen/types) en kan afwijken van de Domain-entiteit.
     /// </summary>
 
-    public sealed class ProductModel
+    public class ProductModel
     {
+        /// <summary>
+        /// Technische primaire sleutel in de database.
+        /// Structureel belangrijk: koppeling tussen DB, mapper en repository.
+        /// </summary>
         public int Id { get; set; }
+
+        /// <summary>
+        /// Business key (Naam) – uniek binnen de database.
+        /// </summary>
         public string Naam { get; set; } = "";
+
         public decimal Prijs { get; set; }
         public int Voorraad { get; set; }
     }
